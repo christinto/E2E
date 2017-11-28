@@ -1,38 +1,36 @@
-pragma solidity ^0.4.17;
-/*   E2E Contract
-  *  Written by Age
+pragma solidity ^0.4.18;
+ /** E2E Basic Contract
+  *  Author: Age
   *
-  * This is a simple contract designed to announce simple messages on the Ethereum blockchain.
-  * It's intended function is to facilitate the transfer of encrypted messages between Ethereum addresses.
+  * This is a simple contract designed to announce simple messages on the
+  * Ethereum blockchain. It's intended function is to facilitate the transfer
+  * of encrypted messages between Ethereum addresses.
   * The encryption is down on the browser and sent through the app.
-  * See https://github.com/AgeManning/E2E for further details.
+  * See https://github.com/Sigp/E2E for further details.
   */
 
-// Mortal Contract
-contract mortal {
-  address private owner;
+import "SafeMathLib.sol"; // Imports the SigP safemath library.
+/**
+ * @title E2E - The main contract.
+ * @dev This contract behaves like an ERC20 utilizing a balanceOf which
+ * represents unread messages. It simply fires an event when a message is sent.
+ * No ethereum can be sent to this contracts
+ */
+contract E2E {
+  using SafeMath for uint256;
 
-  // For privleged functions - Destroy/Correct Contract
-  modifier privleged {
-    if (msg.sender != owner)
-      revert();
-      _;
-  }
+  // ERC20 Meta-data
+  string public name = "E2E Message";
+  uint8 public decimals = 0;
+  string public symbol = "MSG";
+  string public version = "1.0";
 
-  // Constructer defining owner (For correcting Bugs/Destorying the contract)
-  function mortal() public{
-    owner = msg.sender;
-  }
+  // We keep total supply for ERC20 compatibility
+  uint256 public totalSupply = 0;
 
-  // Kill function -- Clear code and return ETH to owner
-  function kill() privleged public {
-      selfdestruct(owner);
-  }
-}
-
-// Main contract
-contract E2E is mortal() {
-
+  /**
+   * event Message(). This is the main event represnting an ecrypted message.
+   */
   event Message(
     address indexed _recepient,
     address indexed _sender,
@@ -40,26 +38,36 @@ contract E2E is mortal() {
      );
 
   // mapping indicating sent messages.
-  // These can be watched and reset.
   mapping (address => uint256) private messages;
-
 
   // Fallback - Prevent ETH being sent
   function () public { revert(); }
 
-  // Get number of messages of sender
-  function balanceOf() view public returns (uint256) {
-    return messages[msg.sender];
+  // Implementation of the ERC20 balanceOf
+  function balanceOf(address _owner) view public returns (uint256) {
+    return messages[_owner];
   }
 
-  // Send message function
-  function Send(address _recepient, string _msg) public {
-    messages[_recepient] ++;
+  /**
+   * Send Message function. - This simply lodges an event with
+   * the message information
+   * @param _recepient  The address to which the message is sent
+   * @param _msg        The (encrypted) message being sent
+   */
+  function send(address _recepient, string _msg) public {
+    require(_recepient != address(0));
+
+    messages[_recepient] = messages[_recepient].add(1);
+    totalSupply = totalSupply.add(1);
     Message(_recepient, msg.sender, _msg);
   }
 
-  // Mark Read - Removes all tokens
+  /**
+   * MarkRead function. Removes the token balances of the caller and reduces
+   * the total token supply (total unread messages)
+   */
   function MarkRead() public {
+    totalSupply = totalSupply.sub(messages[msg.sender]);
     messages[msg.sender] = 0;
   }
 
