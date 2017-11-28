@@ -13,40 +13,16 @@ export default class AccountModal extends Component {
     constructor(props) {
         super(props)
         this.state = {
-            'currentAccounts': [],
             'selected': this.props.currentAccounts,
+            'unlocked': [],
             'nextdisabled': true,
-            'loading': true,
-            'newAccount': false,
             'addAccount': {
                 'Address': '',
                 'PrivateKey': '',
             },
+            'sendPubKey': '',
         }
     }
-
-    /**
-     * When the component is mounted
-     */
-    componentDidMount() {
-        const that = this
-        // setTimeout(function(){
-        try {
-            Promise.resolve(web3.eth.getAccounts())
-                .then((res) => {
-                    // call the api to get the accounts
-                    that.setState({
-                        'currentAccounts': res,
-                        'loading': false,
-                    })
-                })
-
-        } catch (exception) {
-            console.log(exception)
-        }
-        // }, 3000)
-    }
-
 
     /**
      * Handles the click event of the account.
@@ -78,23 +54,70 @@ export default class AccountModal extends Component {
         if (this.state.nextdisabled) {
             return
         }
-        console.log(`Next clicked: ${this.state.selected}`)
-        this.props.onAccountUpdates(this.state.selected)
+
+        switch (this.props.currentState) {
+        case this.props.states.LIST:
+            this.props.changeModalState(this.props.states.UNLOCK)
+            break
+        case this.props.states.UNLOCK:
+            this.props.onAccountUpdates(this.state.selected)
+        }
     }
 
     /**
      * Handles the new account address field filled.
-     * @param {Object} event - The event of a new account.
+     * @param {Object} event - OnChange event of a new account.
      */
     handleAccountAddress(event) {
         // TODO search for key
         this.setState({
             'addAccount': {
                 'Address': event.target.value,
-                'PrivateKey': '',
+                'PrivateKey': this.state.addAccount.PrivateKey,
             },
         })
     }
+
+    /**
+     * Handles the new account private key being filled.
+     * @param {Object} event - OnChange event of privatekey.
+     */
+    handleAccountPrivateKey(event) {
+        this.setState({
+            'addAccount': {
+                'Address': this.state.addAccount.Address,
+                'PrivateKey': event.target.value,
+            },
+        })
+    }
+
+    /**
+     * Handle the pressing of the public key
+     * @param {Object} event - onChange event for Public Key
+     */
+    handlePubKeyChange(event) {
+        this.setState({
+            'sendPubKey': event.target.value,
+        })
+    }
+
+    /**
+     * Handle the public key OK button.
+     * @param {Object} event - Submit button event.
+     */
+    handlePubkeySubmit(event) {
+        // Send the message to the pubkey
+        console.log('sending')
+    }
+
+    /**
+     * Change to state
+     * @param {string} state - The state to change to.
+     */
+    changeToState(state) {
+        this.props.changeModalState(state)
+    }
+
 
     /**
      * Toggles the modal close
@@ -108,7 +131,14 @@ export default class AccountModal extends Component {
      * @param {Object} event - The click event.
      */
     toggleNewAccount(event) {
-        this.setState({'newAccount': !this.state.newAccount})
+        switch (this.props.currentState) {
+        case this.props.states.LIST:
+            this.props.changeModalState(this.props.states.NEW)
+            break
+        case this.props.states.NEW:
+            this.props.changeModalState(this.props.states.LIST)
+            break
+        }
     }
 
     /**
@@ -123,7 +153,8 @@ export default class AccountModal extends Component {
             disabledState = false
         }
 
-        if (this.state.loading) {
+        switch (this.props.currentState) {
+        case this.props.states.LOADING:
             return (
                 <div>
                     <header>Loading Accounts</header>
@@ -137,7 +168,7 @@ export default class AccountModal extends Component {
                     </div>
                 </div>
             )
-        } else if (this.state.newAccount) {
+        case this.props.states.NEW:
             return (
                 <div>
                     <header className="newaccount-header">
@@ -157,7 +188,10 @@ export default class AccountModal extends Component {
                                     type="text"
                                     value={this.state.addAccount.Address}
                                     onChange=
-                                        {this.handleAccountAddress.bind(this)}/>
+                                        {
+                                            this.handleAccountAddress.bind(this)
+                                        }
+                                />
                                 <span className="highlight"></span>
                                 <span className="bar"></span>
                                 <label>Address</label>
@@ -168,7 +202,12 @@ export default class AccountModal extends Component {
                                 <input
                                     type="text"
                                     value={this.state.addAccount.PrivateKey}
-                                    onChange={this.handleAccountPubKey}/>
+                                    onChange=
+                                        {
+                                            this.handleAccountPrivateKey
+                                                .bind(this)
+                                        }
+                                />
                                 <span className="highlight"></span>
                                 <span className="bar"></span>
                                 <label>PrivKey (to convert to pub)</label>
@@ -182,7 +221,8 @@ export default class AccountModal extends Component {
                     </ul>
                 </div>
             )
-        } else {
+        case this.props.states.LIST:
+            console.log('STATE: LIST')
             return (
                 <div>
                     <header>
@@ -192,7 +232,7 @@ export default class AccountModal extends Component {
                     </header>
                     <ul className="accounts-list">
                         {
-                            this.state.currentAccounts.map((acc) => {
+                            this.props.accountsLists.map((acc) => {
                                 let cname = ''
                                 if (selectedSet.indexOf(acc) != -1) {
                                     cname = 'toggled'
@@ -219,6 +259,89 @@ export default class AccountModal extends Component {
                         disabled={this.state.nextdisabled}>
                         Next
                     </button>
+                </div>
+            )
+        case this.props.states.UNLOCK:
+            return (
+                <div>
+                    <header className='newaccount-header'>
+                        Unlock Selected Accounts 
+                        <div className="close-button"
+                            onClick={this.toggleCloseModal.bind(this)}>X</div>
+                        <div
+                            className="go-back"
+                            onClick={this.changeToState
+                                .bind(this, this.props.states.LIST)}>
+                            <div className="backArrow"></div>
+                        </div>
+                    </header>
+                    <ul className="accounts-list">
+                        {
+                            this.state.selected.map((acc) => {
+                                let cname = ''
+                                if (selectedSet.indexOf(acc) != -1) {
+                                    cname = 'toggled'
+                                }
+                                return (
+                                    <li
+                                        onClick=
+                                            {this.handleClick.bind(this, acc)}
+                                        className={cname}
+                                        key={acc}>
+                                        {acc}
+                                    </li>
+                                )
+                            })
+                        }
+                        <li className="newAccount"
+                            onClick={this.toggleNewAccount.bind(this)}>
+                            <div className="oplus"></div>
+                        </li>
+                    </ul>
+                    <button
+                        type="submit"
+                        onClick={this.handleNext.bind(this)}
+                        disabled={this.state.nextdisabled}>
+                        Next
+                    </button>
+                </div>
+            )
+        case this.props.states.PUBKEY:
+            console.log('STATE: Pubkey')
+            return (
+                <div>
+                    <header className="newaccount-header">
+                        Send to Public Key
+                        <div className="close-button"
+                            onClick={this.toggleCloseModal.bind(this)}>X</div>
+                    </header>
+                    <div className='notice-info'>
+                        <header>Account Pubkey Not Found</header>
+                        <p>This account has not made a transaction, please submit
+                        the public key to send a message.</p>
+                    </div>
+                    <ul className="new-account-form">
+                        <li>
+                            <div className="group">
+                                <input
+                                    type="text"
+                                    value={this.state.sendPubKey}
+                                    onChange=
+                                        {
+                                            this.handlePubKeyChange.bind(this)
+                                        }
+                                />
+                                <span className="highlight"></span>
+                                <span className="bar"></span>
+                                <label>PublicKey</label>
+                            </div>
+                        </li>
+                        <li>
+                            <button onClick={this.handlePubkeySubmit}>
+                                Ok
+                            </button>
+                        </li>
+                    </ul>
                 </div>
             )
         }

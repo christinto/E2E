@@ -11,9 +11,6 @@ export default class Message extends Component {
      */
     constructor(props) {
         super(props)
-        this.state = {
-            'sending': this.props.sending,
-        }
     }
 
     /**
@@ -23,13 +20,14 @@ export default class Message extends Component {
      */
     render() {
         let cName = 'message'
+        let sending = ''
         if (this.props.message.from === this.props.currentUser) {
             cName += ' message-from'
         }
         return (
             <div className={cName}>
                 <div className="message-info">
-                    <div className={this.state.sending}></div>
+                    <div className={this.props.message.sending}></div>
                     <header><span
                         className='from-addr'>{this.props.message.from}</span>
                         -> <span
@@ -49,5 +47,4 @@ export default class Message extends Component {
 Message.propTypes = {
     'message': PropTypes.object.isRequired,
     'currentUser': PropTypes.string.isRequired,
-    'sending': PropTypes.string.isRequired,
 }

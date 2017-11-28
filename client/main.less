@@ -264,6 +264,18 @@ body, html {
     animation-duration: 1s;
 }
 
+.sending-done {
+    width: 20px;
+    height: 20px;
+    position: absolute;
+    left: 0px;
+    top: 0px;
+    background: #58b964;
+    border-radius: 20px;
+    opacity: 0;
+    transition: visibility 0s 1s, opacity 1s ease-in-out;
+}
+
 .message header, .message header .from-addr, .message header .to-addr, .message header .message-info, .message .message-content {
     display: inline-block;
     vertical-align: middle;
@@ -344,6 +356,21 @@ body, html {
     padding: 5px;
     background: #fefefe;
     border-bottom: 1px solid rgba(0,0,0,0.2);
+}
+
+.notice-info {
+    width: 75%;
+    margin: 20px auto;
+    border: 1px dashed #eee;
+}
+
+.notice-info header {
+    background: #eee;
+    border: none;
+}
+
+.notice-info p {
+    padding: 5px;
 }
 
 .account-modal .accounts-list {
@@ -731,7 +758,6 @@ body, html {
         transform: rotate(360deg)
     }
 }
-
 
 /***** MEDIA QUERIES *****/
 

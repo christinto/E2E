@@ -20,11 +20,41 @@ class App extends Component {
     constructor(props) {
         super(props)
 
+        this.getAccounts()
+
         this.state = {
             'accounts': {},
+            'accountsList': [],
             'accountModal': true,
+            'modalStates': {
+                'LOADING': 'loading',
+                'LIST': 'account-list',
+                'UNLOCK': 'account-unlock',
+                'NEW': 'account-new',
+                'PUBKEY': 'message-pubkey',
+            },
             'current': '',
             'messageid': 12,
+            // 'currentModalState': 'account-list',
+            'currentModalState': 'loading',
+        }
+    }
+
+    /**
+     * Get the accounts from web3
+     */
+    getAccounts() {
+        try {
+            Promise.resolve(web3.eth.getAccounts())
+                .then((res) => {
+                    console.log(`GOT ACCOUNTS ${res}`)
+                    this.setState({
+                        'accountsList': res,
+                        'currentModalState': this.state.modalStates.LIST,
+                    })
+                })
+        } catch (exception) {
+            console.log(exception)
         }
     }
 
@@ -37,6 +67,8 @@ class App extends Component {
         res.forEach((element) => {
             newAccounts[element] = ''
         })
+
+        // TODO search the chain for the messages
 
         this.setState({
             'accounts': newAccounts,
@@ -68,6 +100,15 @@ class App extends Component {
     }
 
     /**
+     * Changes a modal state
+     * @param {string} state - The state to set.
+     */
+    changeModalState(state) {
+        this.setState({
+            'currentModalState': state,
+        })
+    }
+    /**
      * Toggles the new account modal
      */
     toggleNewAccount() {
@@ -84,12 +125,18 @@ class App extends Component {
         if (this.state.accountModal) {
             return (
                 <div>
-                    <div id="fadedbg"></div>
+                    <div id="fadedbg"
+                        onClick={this.toggleNewAccount.bind(this)}>
+                    </div>
                     <div className="account-modal">
                         <AccountModal
+                            accountsLists={this.state.accountsList}
                             onAccountUpdates={this.updateAccountList.bind(this)}
                             handleModalClose={this.toggleNewAccount.bind(this)}
+                            changeModalState={this.changeModalState.bind(this)}
                             currentAccounts={Object.keys(this.state.accounts)}
+                            states={this.state.modalStates}
+                            currentState={this.state.currentModalState}
                         />
                     </div>
                 </div>
@@ -100,8 +147,8 @@ class App extends Component {
     /**
      * Handle the submission of the message.
      * Send to Contract
-     * @param {String} to  - address of message
-     * @param {String} message - Message to send to
+     * @param {String} to  - recipient of message
+     * @param {String} message - content of message
      * @param {Boolean} encrypt - Boolean to encrypt
      */
     handleSubmitMessage(to, message, encrypt) {
@@ -109,12 +156,6 @@ class App extends Component {
             alert('No account selected')
             return
         }
-        this.props.messages.push({
-            '_id': this.state.messageid,
-            'to': to,
-            'from': this.state.current,
-            'message': message,
-        })
 
         console.log(`[APP] handleSubmitMessage 
             ${this.state.messageid} =
@@ -122,8 +163,28 @@ class App extends Component {
             ${message},
             ${encrypt}`
         )
-        this.setState({'messageid': this.state.messageid + 1})
-        this.messageSubmitBox.clearBox()
+
+        this.setState({
+            'currentModalState': this.state.modalStates.PUBKEY,
+        })
+        this.toggleNewAccount()
+
+        // this.props.messages.push({
+        //     '_id': this.state.messageid,
+        //     'to': to,
+        //     'from': this.state.current,
+        //     'message': message,
+        //     'sending': 'sending',
+        // })
+
+        // this.setState({'messageid': this.state.messageid + 1})
+        // this.messageSubmitBox.clearBox()
+
+        // setTimeout(() => {
+        //     let msgs = this.props.messages
+        //     this.props.messages[msgs.length - 1].sending = 'sending-done'
+        //     this.forceUpdate()
+        // }, 4000)
     }
 
     /**
@@ -156,7 +217,6 @@ class App extends Component {
                 <Message
                     key={msg._id}
                     message={msg}
-                    sending=''
                     currentUser={this.state.current}
                 />
             )
@@ -222,6 +282,7 @@ export default withTracker(() => {
                 'to': '0x53b13c1e9d5e14669d6fecc3214c02cc41405df6',
                 'from': '0xfe905B1F5fC8A3DEFc4734f0086D4E70c4c2d313',
                 'message': 'hello',
+                'sending': '',
             },
             {
                 '_id': 1,
@@ -230,6 +291,7 @@ export default withTracker(() => {
                 'message': 'this is an incredibly long message that needs to'
                 + 'get broken up into a number of different things, yet'
                 + 'another thing to consider being a frontend potato',
+                'sending': '',
             },
             {
                 '_id': 2,
@@ -237,148 +299,7 @@ export default withTracker(() => {
                 'from': '0xfe905B1F5fC8A3DEFc4734f0086D4E70c4c2d313',
                 'message': 'lkasjdlkafdaidsaid lkasdj' +
                     'lajddslkajslkdajsldkjsaldkjalksjdlkajdslakjdslasdjlasdjl',
-            },
-            {
-                '_id': 3,
-                'to': '0x936aC4aea651D224F9a257F272d9a6d7e1e042A9',
-                'from': '0xfe905B1F5fC8A3DEFc4734f0086D4E70c4c2d313',
-                'message': 'I ',
-            },
-            {
-                '_id': 4,
-                'to': '0x936aC4aea651D224F9a257F272d9a6d7e1e042A9',
-                'from': '0xfe905B1F5fC8A3DEFc4734f0086D4E70c4c2d313',
-                'message': 'wonder',
-            },
-            {
-                '_id': 5,
-                'from': '0x936aC4aea651D224F9a257F272d9a6d7e1e042A9',
-                'to': '0xfe905B1F5fC8A3DEFc4734f0086D4E70c4c2d313',
-                'message': 'wonder',
-            },
-            {
-                '_id': 6,
-                'from': '0x936aC4aea651D224F9a257F272d9a6d7e1e042A9',
-                'to': '0xfe905B1F5fC8A3DEFc4734f0086D4E70c4c2d313',
-                'message': 'Lorem ipsum dolor sit amet, consectetur'
-                + 'adipiscing elit. Ut pellentesque neque mauris, id iaculis'
-                + 'nulla molestie gravida. Duis a leo nulla. Mauris eleifend'
-                + 'nisl a lacus tempus scelerisque. Donec et pellentesque est.'
-                + 'Pellentesque dolor tortor, varius in porta id, pharetra'
-                + 'tincidunt urna. Morbi ut arcu non mi malesuada tincidunt.'
-                + 'Proin eu lorem a erat laoreet consecte. Nullam rhoncus est'
-                + 'eget nisl mattis, at aliquam nibh consequat. Sed euismod'
-                + 'sollicitudin nibh ac ullamcorper. Vamus pretium eu orci nec'
-                + 'commodo. Quisque in sollicitudin augue, a ullamcorper eros.',
-            },
-            {
-                '_id': 7,
-                'from': '0x936aC4aea651D224F9a257F272d9a6d7e1e042A9',
-                'to': '0xfe905B1F5fC8A3DEFc4734f0086D4E70c4c2d313',
-                'message': 'Lorem ipsum dolor sit amet, consectetur'
-                + 'adipiscing elit. Ut pellentesque neque mauris, id iaculis'
-                + 'nulla molestie gravida. Duis a leo nulla. Mauris eleifend'
-                + 'nisl a lacus tempus scelerisque. Donec et pellentesque est.'
-                + 'Pellentesque dolor tortor, varius in porta id, pharetra'
-                + 'tincidunt urna. Morbi ut arcu non mi malesuada tincidunt.'
-                + 'Proin eu lorem a erat laoreet coectetur. Nullam rhoncus est'
-                + 'eget nisl mattis, at aliquam nibh consequat. Sed euismod'
-                + 'sollicitudin nibh ac ullamcorr. Vivamus pretium eu orci nec'
-                + 'commodo. Quisque in sollicitudin augue, a ullamcorper eros.',
-            },
-            {
-                '_id': 8,
-                'from': '0x936aC4aea651D224F9a257F272d9a6d7e1e042A9',
-                'to': '0xfe905B1F5fC8A3DEFc4734f0086D4E70c4c2d313',
-                'message': 'Lorem ipsum dolor sit amet, consectetur'
-                + 'adipiscing elit. Ut pellentesque neque mauris, id iaculis'
-                + 'nulla molestie gravida. Duis a leo nulla. Mauris eleifend'
-                + 'nisl a lacus tempus scelerisque. Donec et pellentesque est.'
-                + 'Pellentesque dolor tortor, varius in porta id, pharetra'
-                + 'tincidunt urna. Morbi ut arcu non mi malesuada tincidunt.'
-                + 'Proin eu lorem a erat lreet consectetur. Nullam rhoncus est'
-                + 'eget nisl mattis, at aliquam nibh consequat. Sed euismod'
-                + 'sollicitudin nibh ac ullamrper. Vivamus pretium eu orci nec'
-                + 'commodo. Quisque in sollicitudin augue, a ullamcorper eros.',
-            },
-            {
-                '_id': 9,
-                'from': '0x936aC4aea651D224F9a257F272d9a6d7e1e042A9',
-                'to': '0xfe905B1F5fC8A3DEFc4734f0086D4E70c4c2d313',
-                'message': 'Lorem ipsum dolor sit amet, consectetur'
-                + 'adipiscing elit. Ut pellentesque neque mauris, id iaculis'
-                + 'nulla molestie gravida. Duis a leo nulla. Mauris eleifend'
-                + 'nisl a lacus tempus scelerisque. Donec et pellentesque est.'
-                + 'Pellentesque dolor tortor, varius in porta id, pharetra'
-                + 'tincidunt urna. Morbi ut arcu non mi malesuada tincidunt.'
-                + 'Proin eu lorem a erat consectetur. Nullam rhoncus est'
-                + 'eget nisl mattis, at aliquam nibh consequat. Sed euismod'
-                + 'sollicitudin nibh ac u. Vivamus pretium eu orci nec'
-                + 'commodo. Quisque in sollicitudin augue, a ullamcorper eros.',
-            },
-            {
-                '_id': 10,
-                'from': '0x936aC4aea651D224F9a257F272d9a6d7e1e042A9',
-                'to': '0xfe905B1F5fC8A3DEFc4734f0086D4E70c4c2d313',
-                'message': 'Lorem ipsum dolor sit amet, consectetur'
-                + 'adipiscing elit. Ut pellentesque neque mauris, id iaculis'
-                + 'nulla molestie gravida. Duis a leo nulla. Mauris eleifend'
-                + 'nisl a lacus tempus scelerisque. Donec et pellentesque est.'
-                + 'Pellentesque dolor tortor, varius in porta id, pharetra'
-                + 'tincidunt urna. Morbi ut arcu non mi malesuada tincidunt.'
-                + 'Proin eu lorem a erat consectetur. Nullam rhoncus est'
-                + 'eget nisl mattis, at aliquam nibh consequat. Sed euismod'
-                + 'sollicitudin nibh ac u. Vivamus pretium eu orci nec'
-                + 'commodo. Quisque in sollicitudin augue, a ullamcorper eros.',
-            },
-            {
-                '_id': 11,
-                'from': '0x936aC4aea651D224F9a257F272d9a6d7e1e042A9',
-                'to': '0xfe905B1F5fC8A3DEFc4734f0086D4E70c4c2d313',
-                'message': 'Lorem ipsum dolor sit amet, consectetur'
-                + 'adipiscing elit. Ut pellentesque neque mauris, id iaculis'
-                + 'nulla molestie gravida. Duis a leo nulla. Mauris eleifend'
-                + 'nisl a lacus tempus scelerisque. Donec et pellentesque est.'
-                + 'Pellentesque dolor tortor, varius in porta id, pharetra'
-                + 'tincidunt urna. Morbi arcu non mi malesuada tincidunt.'
-                + 'Proin eu lorem a erat consectetur. Nullam rhoncus est'
-                + 'eget nisl mattis, at anibh consequat. Sed euismod',
-            },
-            {
-                '_id': 12,
-                'from': '0x936aC4aea651D224F9a257F272d9a6d7e1e042A9',
-                'to': '0xfe905B1F5fC8A3DEFc4734f0086D4E70c4c2d313',
-                'message': 'Lorem ipsum dolor sit amet, consectetur'
-                + 'adipiscing elit. Ut pellentesque neque mauris, id iaculis'
-                + 'nulla molestie gravida. Duis a leo nulla. Mauris eleifend'
-                + 'nisl a lacus tempus scelerisque. Donec et pellentesque est.'
-                + 'Pellentesque dolor tortor, varius in porta id, pharetra'
-                + 'tincidunt urna. Morbi ut arcu non mi malesuada tincidunt.'
-                + 'Proin eu lorem a erat laoreet consectetur. rhoncus est'
-                + 'eget nisl mattis, at aliquam nibh consequat. Sed euismod'
-                + 'sollicitudin nibh ac ullamcorper. Vivamus pretium orci nec'
-                + 'commodo. Quisque in sollicitudin augue, a ullamcorper eros.'
-                + 'Etiam aliquet eget nunc sit amet malesuada. Nulla eget'
-                + 'pharetra lacus. Proin eget viverra ex. Nam gravida dui a'
-                + 'commodo commodo. Mauris egestas purus id risus lobortis'
-                + 'eleifend. Vivamus cursus, dolor sit amet condimentum aliq'
-                + 'diam est pharetra elit, non ornare lectus est in ante.'
-                + 'Integer aliquet ante non leo imperdiet, eu congue nunc'
-                + 'sagittis. Aliquam mauris turpis, tempor nec sagittis at,'
-                + 'feugiat non nunc. Vestibulum efficitur lorem id vulputate'
-                + 'dapibus. Aenean mi leo, mollis ac neque quis, lobortis porta'
-                + 'justo. Curabitur vitae risus arcu. Nunc sed sapien libero.'
-                + 'Sed libero ex, efficitur sed molestie sit amet, sagittis et'
-                + 'lectus. Lorem ipsum dolor sit amet, consectetur adipiscing'
-                + 'elit. Aliquam nisl tellus, imperdiet in justo eget, auctor'
-                + 'ullamcorper diam. Vivamus a tempor enim. Nam tristique lacus'
-                + 'magna, vel dictum nunc sollicitudin ut. Morbi lorem'
-                + 'a tortor volutpat lacinia. Quisque non pulvinar leo. Sed'
-                + 'pellentesque, felis eu ullamcorper gravida, mi odio eleifend'
-                + 'ipsum, in iaculis dolor nisi in felis. Vivamus bibendum odio'
-                + 'ut sem vehicula, sed sollicitudin risus iaculis. Etiam'
-                + 'sollicitudin vitae ipsum luctus mattis. In at facilisis'
-                + 'massa.',
+                'sending': '',
             },
         ],
     }
