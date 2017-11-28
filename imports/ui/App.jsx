@@ -164,10 +164,14 @@ class App extends Component {
             ${encrypt}`
         )
 
+        // Use this state only if pubkey not found
+
         this.setState({
             'currentModalState': this.state.modalStates.PUBKEY,
         })
         this.toggleNewAccount()
+
+        // COMMENTED FOR TESTING
 
         // this.props.messages.push({
         //     '_id': this.state.messageid,
@@ -179,6 +183,8 @@ class App extends Component {
 
         // this.setState({'messageid': this.state.messageid + 1})
         // this.messageSubmitBox.clearBox()
+
+        // Example sending state
 
         // setTimeout(() => {
         //     let msgs = this.props.messages
